@@ -79,9 +79,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun registrarse(){
         val nombre = nombreRegistroInput.editText?.text.toString()
-        val correo = correoRegistroInput.editText?.text.toString()
+        var correo = correoRegistroInput.editText?.text.toString()
         val contraseña = contraseñaRegistroInput.editText?.text.toString()
         if (comprobarCamposRegistro()) {
+            if(correo.endsWith(".com")){
+                correo = correo.dropLast(4)
+            }
             // Realizar la autenticación con Firebase
             database.child("usuarios").child(correo).get().addOnSuccessListener { dataSnapshot ->
                 if (dataSnapshot.exists()) {
@@ -105,9 +108,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun iniciarSesion(){
-        val correo = correoInicioSesionInput.editText?.text.toString()
+        var correo = correoInicioSesionInput.editText?.text.toString()
         val contraseña = contraseñaInicioSesionInput.editText?.text.toString()
         if (comprobarCamposInicioSesion()) {
+            if(correo.endsWith(".com")){
+                correo = correo.dropLast(4)
+            }
             // Realizar la autenticación con Firebase
             database.child("usuarios").child(correo).get().addOnSuccessListener { dataSnapshot ->
                 if (dataSnapshot.exists()) {
@@ -128,6 +134,9 @@ class MainActivity : AppCompatActivity() {
                         // Contraseña incorrecta
                         Toast.makeText(this, "Datos incorrectos", Toast.LENGTH_SHORT).show()
                     }
+                }else{
+                    // El usuario no existe
+                    Toast.makeText(this, "Datos incorrectos", Toast.LENGTH_SHORT).show()
                 }
             }
         }
