@@ -71,6 +71,7 @@
             android:layout_height="wrap_content"
             >
             <Button
+                android:id="@+id/iniciarSesionButtonVista1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -79,6 +80,7 @@
                 android:backgroundTint="@color/encabezados"
                 />
             <Button
+                android:id="@+id/registrarseButtonVista1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -99,7 +101,7 @@
             />
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/CorreoInicioSesionInputLayout"
+            android:id="@+id/correoInicioSesionInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/correo">
@@ -119,7 +121,7 @@
             />
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ContrasenaInicioSesionInputLayout"
+            android:id="@+id/contrasenaInicioSesionInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/contrasena">
@@ -154,7 +156,7 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:padding="10dp"
-        android:visibility="invisible"
+        android:visibility="gone"
         >
 
         <LinearLayout
@@ -162,6 +164,7 @@
             android:layout_height="wrap_content"
             >
             <Button
+                android:id="@+id/iniciarSesionButtonVista2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -171,6 +174,7 @@
                 android:backgroundTint="@color/botonesSecundario"
                 />
             <Button
+                android:id="@+id/registrarseButtonVista2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -240,7 +244,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
-            android:id="@+id/RegistrarseButton"
+            android:id="@+id/registrarseButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
