@@ -4,7 +4,10 @@
     <color name="blanco">#FFFFFFFF</color>
 
     <color name="background">#4CAF50</color>
-    <color name="botones">#4CAF50</color>
+
+    <color name="botonesPrimario">#4CAF50</color>
+    <color name="botonesSecundario">#f3f4f6</color>
+    <color name="botonesSecundario2">#2196F3</color>
 
     <color name="encabezados">#2196F3</color>
 
