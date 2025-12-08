@@ -2,6 +2,7 @@ package com.example.proyectofinalmovil3
 
 import android.Manifest
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -21,6 +22,8 @@ class HomeFragment : Fragment(), SensorEventListener {
 
     private var txtCantidadPasos: TextView? = null
 
+    private lateinit var txtNombreUsuario: TextView
+
     private lateinit var sensorManager: SensorManager
     private var stepSensor: Sensor? = null
 
@@ -31,6 +34,8 @@ class HomeFragment : Fragment(), SensorEventListener {
         private const val REQUEST_ACTIVITY_RECOGNITION = 1001
     }
 
+    private lateinit var sharedPreferences: SharedPreferences
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -38,7 +43,13 @@ class HomeFragment : Fragment(), SensorEventListener {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
+        sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+        // inicializamos las variables de entorno gráfico
         txtCantidadPasos = view.findViewById(R.id.txtCantidadPasos)
+        txtNombreUsuario = view.findViewById(R.id.txtNombreUsuario)
+
+        actualizarNombre()
 
         // SensorManager y sensor de pasos
         sensorManager =
@@ -55,6 +66,11 @@ class HomeFragment : Fragment(), SensorEventListener {
         }
 
         return view
+    }
+
+    fun actualizarNombre(){
+        val nombre = sharedPreferences.getString("name", "")
+        txtNombreUsuario.text = nombre
     }
 
     override fun onResume() {
