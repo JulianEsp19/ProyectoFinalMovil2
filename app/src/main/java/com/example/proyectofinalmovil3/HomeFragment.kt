@@ -31,7 +31,6 @@ class HomeFragment : Fragment(), SensorEventListener {
     // --- MODIFICADO: Declaración de todas las vistas necesarias ---
     private lateinit var txtCantidadPasos: TextView
     private lateinit var txtCantidadEventos: TextView
-    private var txtCantidadPasos: TextView? = null
     private lateinit var txtNombreUsuario: TextView
     private lateinit var cardBuscarEventos: CardView
     private lateinit var cardMisEstadisticas: CardView
@@ -109,7 +108,7 @@ class HomeFragment : Fragment(), SensorEventListener {
 
         // Cargar el nombre de usuario
         database.child("usuarios").child(emailKey).child("nombre").get().addOnSuccessListener {
-            if(it.exists()) {
+            if (it.exists()) {
                 txtNombreUsuario.text = it.getValue(String::class.java)
             }
         }
@@ -120,8 +119,10 @@ class HomeFragment : Fragment(), SensorEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     val limpieza = snapshot.child("eventosLimpieza").getValue(Int::class.java) ?: 0
-                    val reciclaje = snapshot.child("eventosReciclaje").getValue(Int::class.java) ?: 0
-                    val reforestacion = snapshot.child("eventosReforestacion").getValue(Int::class.java) ?: 0
+                    val reciclaje =
+                        snapshot.child("eventosReciclaje").getValue(Int::class.java) ?: 0
+                    val reforestacion =
+                        snapshot.child("eventosReforestacion").getValue(Int::class.java) ?: 0
                     totalStepsFromDB = snapshot.child("pasosTotales").getValue(Int::class.java) ?: 0
 
                     val eventosTotales = limpieza + reciclaje + reforestacion
@@ -138,6 +139,7 @@ class HomeFragment : Fragment(), SensorEventListener {
                 Log.e("HomeFragment", "Error al cargar las estadísticas.", error.toException())
             }
         })
+    }
     fun irAFragment(posicion: Int) {
         val activityHome = requireActivity() as ActivityHome
         activityHome.irAFragment(posicion)
