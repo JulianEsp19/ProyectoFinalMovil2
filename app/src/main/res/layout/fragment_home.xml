@@ -247,37 +247,11 @@
         </LinearLayout>
 
         <!-- Próximos eventos header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/txtProximosEventos"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Próximos Eventos"
-                android:textColor="@color/colorTextPrimary"
-                android:textStyle="bold"
-                android:textSize="18sp" />
-
-            <TextView
-                android:id="@+id/txtVerTodos"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ver Todos"
-                android:textColor="@color/colorAccentBlue"
-                android:textSize="14sp" />
-        </LinearLayout>
 
         <!-- Tarjeta de un evento (ejemplo estático) -->
+        <!-- Tarjeta de próximos eventos (preview) -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/cardEventoEjemplo"
+            android:id="@+id/cardEventosHome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -290,90 +264,34 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Icono calendario -->
-                <LinearLayout
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:gravity="center"
-                    android:background="@android:color/holo_green_light">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:src="@drawable/event"
-                        android:tint="@color/colorWhite"
-                        tools:ignore="UseAppTint" />
-                </LinearLayout>
-
-                <!-- Texto del evento -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/txtTituloEventosHome"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:orientation="vertical"
-                    android:layout_weight="1">
+                    android:text="Próximos eventos"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
 
-                    <TextView
-                        android:id="@+id/txtTituloEvento"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Plantación de Árboles - Ribera"
-                        android:textColor="@color/colorTextPrimary"
-                        android:textStyle="bold"
-                        android:textSize="16sp" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerEventosHome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_evento" />
 
-                    <TextView
-                        android:id="@+id/txtFechaEvento"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="9/12/2025 a las 10:00"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="13sp" />
+                <Button
+                    android:id="@+id/btnVerTodosEventos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_gravity="end"
+                    android:text="Mostrar todos" />
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <!-- Tag Reforestación -->
-                        <TextView
-                            android:id="@+id/txtTagReforestacion"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:background="@color/colorTagGreen"
-                            android:text="Reforestación"
-                            android:textColor="@color/colorWhite"
-                            android:textSize="12sp" />
-
-                        <!-- Ubicación -->
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_marginStart="8dp"
-                            android:src="@android:drawable/ic_menu_mylocation"
-                            android:tint="@color/colorTextSecondary"
-                            tools:ignore="UseAppTint" />
-
-                        <TextView
-                            android:id="@+id/txtUbicacionEvento"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="Parque Ribera"
-                            android:textColor="@color/colorTextSecondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

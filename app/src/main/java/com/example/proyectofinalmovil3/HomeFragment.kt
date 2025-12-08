@@ -2,53 +2,47 @@ package com.example.proyectofinalmovil3
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.os.Build
 import android.os.Bundle
-import android.util.Log // --- AÑADIDO ---
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button // --- AÑADIDO ---
+import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
-import androidx.cardview.widget.CardView // --- AÑADIDO ---
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.firebase.database.DataSnapshot // --- AÑADIDO ---
-import com.google.firebase.database.DatabaseError // --- AÑADIDO ---
-import com.google.firebase.database.DatabaseReference // --- AÑADIDO ---
-import com.google.firebase.database.FirebaseDatabase // --- AÑADIDO ---
-import com.google.firebase.database.ValueEventListener // --- AÑADIDO ---
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.proyectofinalmovil3.Evento.Evento
+import com.example.proyectofinalmovil3.Evento.EventosAdapter
+import com.google.firebase.database.*
 
-class HomeFragment : Fragment(), SensorEventListener {
+class HomeFragment : Fragment() {
 
-    // --- MODIFICADO: Declaración de todas las vistas necesarias ---
-    private lateinit var txtCantidadPasos: TextView
-    private lateinit var txtCantidadEventos: TextView
     private lateinit var txtNombreUsuario: TextView
+    private lateinit var txtCantidadEventos: TextView
+    private lateinit var txtCantidadPasos: TextView
+
     private lateinit var cardBuscarEventos: CardView
     private lateinit var cardMisEstadisticas: CardView
 
-    // --- Variables para el sensor (tu código) ---
-    private lateinit var sensorManager: SensorManager
-    private var stepSensor: Sensor? = null
-    private var initialSteps: Float = -1f
-
-    // --- AÑADIDO: Variables para Firebase ---
-    private lateinit var database: DatabaseReference
-    private var totalStepsFromDB: Int = 0 // Para guardar los pasos de la BD
-
-    companion object {
-        private const val REQUEST_ACTIVITY_RECOGNITION = 1001
-    }
+    // Para la lista de eventos en Home (solo 1: el último)
+    private lateinit var recyclerEventosHome: RecyclerView
+    private lateinit var btnVerTodosEventos: Button
+    private val listaEventosHome: MutableList<Evento> = mutableListOf()
 
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var database: DatabaseReference
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var pasosSimulados = 0
+    private var pasosTotales = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,182 +52,190 @@ class HomeFragment : Fragment(), SensorEventListener {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        database = FirebaseDatabase.getInstance().reference
 
-        // --- MODIFICADO: Inicialización de todas las vistas ---
-        txtCantidadPasos = view.findViewById(R.id.txtCantidadPasos)
-        txtCantidadEventos = view.findViewById(R.id.txtCantidadEventos)
+        // Referencias UI
         txtNombreUsuario = view.findViewById(R.id.txtNombreUsuario)
+        txtCantidadEventos = view.findViewById(R.id.txtCantidadEventos)
+        txtCantidadPasos = view.findViewById(R.id.txtCantidadPasos)
+
         cardBuscarEventos = view.findViewById(R.id.cardBuscarEventos)
         cardMisEstadisticas = view.findViewById(R.id.cardMisEstadisticas)
 
-        // --- AÑADIDO: Inicialización de Firebase ---
-        database = FirebaseDatabase.getInstance().reference
+        recyclerEventosHome = view.findViewById(R.id.recyclerEventosHome)
+        btnVerTodosEventos = view.findViewById(R.id.btnVerTodosEventos)
 
-        actualizarNombre()
+        recyclerEventosHome.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
 
-        // --- MODIFICADO: Llamamos a la función principal que carga todo ---
-        cargarDatosDelUsuario()
-
-        // SensorManager y sensor de pasos (tu código)
-        sensorManager =
-            requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
-
-        if (stepSensor == null) {
-            Toast.makeText(
-                requireContext(),
-                "Tu dispositivo no tiene sensor de pasos",
-                Toast.LENGTH_SHORT
-            ).show()
+        // Navegación
+        cardBuscarEventos.setOnClickListener {
+            irAFragment(2) // fragment de Eventos
         }
 
-        cardBuscarEventos.setOnClickListener { irAFragment(2) }
-        cardMisEstadisticas.setOnClickListener { irAFragment(3) }
+        cardMisEstadisticas.setOnClickListener {
+            irAFragment(3) // fragment de Stats
+        }
+
+        btnVerTodosEventos.setOnClickListener {
+            irAFragment(2) // ir a fragment_eventos
+        }
+
+        // Cargar datos de usuario (nombre, pasos)
+        cargarDatosDelUsuario()
+
+        // Cargar eventos para contador + preview del último
+        cargarEventosHome()
+
+        // Simular pasos si hay permisos
+        if (tienePermisoActividadFisica()) {
+            iniciarSimulacionPasos()
+        } else {
+            txtCantidadPasos.text = "0"
+        }
 
         return view
     }
 
-    // --- AÑADIDO: Función principal para cargar datos desde Firebase ---
-    private fun cargarDatosDelUsuario() {
-        val emailKey = sharedPreferences.getString("email", null)
+    private fun irAFragment(index: Int) {
+        (activity as? ActivityHome)?.irAFragment(index)
+    }
 
-        if (emailKey == null) {
-            Log.e("HomeFragment", "ERROR: No se encontró la clave 'email' en SharedPreferences.")
-            // Valores por defecto si no hay sesión
+    private fun cargarDatosDelUsuario() {
+        val email = sharedPreferences.getString("email", null)
+        val name = sharedPreferences.getString("name", null)
+
+        if (email == null) {
             txtNombreUsuario.text = "Invitado"
             txtCantidadEventos.text = "0"
             txtCantidadPasos.text = "0"
             return
         }
 
-        // Cargar el nombre de usuario
-        database.child("usuarios").child(emailKey).child("nombre").get().addOnSuccessListener {
-            if (it.exists()) {
-                txtNombreUsuario.text = it.getValue(String::class.java)
-            }
-        }
+        val emailKey = email.replace(".", "_")
 
-        // Cargar los datos de las tarjetas (Eventos y Pasos)
-        val statsRef = database.child("usuarios").child(emailKey).child("estadisticas")
+        val userRef = database.child("usuarios").child(emailKey)
+        userRef.child("nombre").get()
+            .addOnSuccessListener { snapshot ->
+                val nombre = snapshot.getValue(String::class.java) ?: name ?: "Usuario"
+                txtNombreUsuario.text = nombre
+            }
+            .addOnFailureListener {
+                txtNombreUsuario.text = name ?: "Usuario"
+            }
+
+        val statsRef = userRef.child("estadisticas")
         statsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    val limpieza = snapshot.child("eventosLimpieza").getValue(Int::class.java) ?: 0
-                    val reciclaje =
-                        snapshot.child("eventosReciclaje").getValue(Int::class.java) ?: 0
-                    val reforestacion =
-                        snapshot.child("eventosReforestacion").getValue(Int::class.java) ?: 0
-                    totalStepsFromDB = snapshot.child("pasosTotales").getValue(Int::class.java) ?: 0
-
-                    val eventosTotales = limpieza + reciclaje + reforestacion
-
-                    txtCantidadEventos.text = eventosTotales.toString()
-                    txtCantidadPasos.text = totalStepsFromDB.toString()
+                    val pasosTotalesDB = snapshot.child("pasosTotales").getValue(Int::class.java) ?: 0
+                    pasosTotales = pasosTotalesDB
+                    txtCantidadPasos.text = pasosTotales.toString()
                 } else {
-                    txtCantidadEventos.text = "0"
                     txtCantidadPasos.text = "0"
+                    pasosTotales = 0
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("HomeFragment", "Error al cargar las estadísticas.", error.toException())
+                Log.e("HomeFragment", "Error al leer estadisticas", error.toException())
             }
         })
     }
-    fun irAFragment(posicion: Int) {
-        val activityHome = requireActivity() as ActivityHome
-        activityHome.irAFragment(posicion)
-    }
 
+    /**
+     * Carga TODOS los eventos de /eventos en Firebase:
+     * - Actualiza el contador txtCantidadEventos con el total.
+     * - Muestra SOLO el último evento en el RecyclerView de Home.
+     */
+    private fun cargarEventosHome() {
+        database.child("eventos").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                listaEventosHome.clear()
 
-    fun actualizarNombre(){
-        val nombre = sharedPreferences.getString("name", "")
-        txtNombreUsuario.text = nombre
-    }
+                if (snapshot.exists()) {
+                    var totalEventos = 0
+                    var ultimoEvento: Evento? = null
 
-    override fun onResume() {
-        super.onResume()
-        if (stepSensor != null) {
-            if (tienePermisoActividad()) {
-                sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL)
-            } else {
-                pedirPermisoActividad()
+                    for (eventoSnapshot in snapshot.children) {
+                        val mes = eventoSnapshot.child("mes").getValue(String::class.java) ?: ""
+                        val dia = eventoSnapshot.child("dia").getValue(String::class.java) ?: ""
+                        val titulo = eventoSnapshot.child("titulo").getValue(String::class.java) ?: ""
+                        val descripcion = eventoSnapshot.child("descripcion").getValue(String::class.java) ?: ""
+                        val categoria = eventoSnapshot.child("categoria").getValue(String::class.java) ?: ""
+                        val inscritos = eventoSnapshot.child("inscritos").getValue(Int::class.java) ?: 0
+                        val hora = eventoSnapshot.child("hora").getValue(String::class.java) ?: ""
+                        val lugar = eventoSnapshot.child("lugar").getValue(String::class.java) ?: ""
+
+                        if (titulo.isNotEmpty()) {
+                            totalEventos++
+                            ultimoEvento = Evento(
+                                mes = mes,
+                                dia = dia,
+                                titulo = titulo,
+                                descripcion = descripcion,
+                                categoria = categoria,
+                                inscritos = inscritos,
+                                hora = hora,
+                                lugar = lugar
+                            )
+                        }
+                    }
+
+                    // Actualizamos contador con el TOTAL
+                    txtCantidadEventos.text = totalEventos.toString()
+
+                    // Preview: SOLO el último evento
+                    if (ultimoEvento != null) {
+                        listaEventosHome.add(ultimoEvento!!)
+
+                        recyclerEventosHome.adapter =
+                            EventosAdapter(listaEventosHome) { evento ->
+                                clickEventoHome(evento)
+                            }
+                    } else {
+                        recyclerEventosHome.adapter = null
+                    }
+                } else {
+                    txtCantidadEventos.text = "0"
+                    recyclerEventosHome.adapter = null
+                }
             }
-        }
-    }
 
-    override fun onPause() {
-        super.onPause()
-        if (stepSensor != null) {
-            sensorManager.unregisterListener(this)
-        }
-        // --- AÑADIDO: Guardar los pasos al pausar el fragmento ---
-        guardarPasosEnFirebase()
-    }
-
-    // --- MODIFICADO: onSensorChanged para usar los pasos de la BD como base ---
-    override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_STEP_COUNTER) {
-            if (initialSteps < 0f) {
-                initialSteps = event.values[0]
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("HomeFragment", "Error al cargar eventos de Firebase", error.toException())
             }
-            // Pasos dados desde que se abrió el fragment
-            val pasosNuevos = event.values[0] - initialSteps
-            // Total a mostrar = Pasos de la BD + nuevos pasos
-            val pasosTotalesAMostrar = totalStepsFromDB + pasosNuevos.toInt()
-            txtCantidadPasos.text = pasosTotalesAMostrar.toString()
-        }
+        })
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // no lo necesitamos por ahora
+    private fun clickEventoHome(evento: Evento) {
+        // En lugar de abrir previewEvento, mandamos a la pestaña de Eventos
+        irAFragment(2)
     }
 
-    // --- AÑADIDO: Nuevo método para guardar los pasos ---
-    private fun guardarPasosEnFirebase() {
-        val emailKey = sharedPreferences.getString("email", null) ?: return
+    // ----------------- Simulación de pasos -----------------
 
-        // Tomamos el último valor mostrado en pantalla y lo guardamos
-        val pasosFinales = txtCantidadPasos.text.toString().toIntOrNull() ?: totalStepsFromDB
-        database.child("usuarios").child(emailKey).child("estadisticas").child("pasosTotales").setValue(pasosFinales)
-            .addOnSuccessListener {
-                Log.d("HomeFragment", "Pasos ($pasosFinales) guardados en Firebase.")
-            }
-    }
-
-
-    // ===== Permisos (Tu código original, está perfecto) =====
-    private fun tienePermisoActividad(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
-        return ContextCompat.checkSelfPermission(
+    private fun tienePermisoActividadFisica(): Boolean {
+        val permissionState = ContextCompat.checkSelfPermission(
             requireContext(),
             Manifest.permission.ACTIVITY_RECOGNITION
-        ) == PackageManager.PERMISSION_GRANTED
+        )
+        return permissionState == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun pedirPermisoActividad() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            requestPermissions(
-                arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
-                REQUEST_ACTIVITY_RECOGNITION
-            )
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_ACTIVITY_RECOGNITION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (stepSensor != null) {
-                    sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL)
-                }
-            } else {
-                Toast.makeText(requireContext(), "Sin permiso no se pueden contar pasos", Toast.LENGTH_SHORT).show()
+    private fun iniciarSimulacionPasos() {
+        handler.post(object : Runnable {
+            override fun run() {
+                pasosSimulados += 5
+                val nuevosPasosTotales = pasosTotales + pasosSimulados
+                txtCantidadPasos.text = nuevosPasosTotales.toString()
+                handler.postDelayed(this, 3000L)
             }
-        }
+        })
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        handler.removeCallbacksAndMessages(null)
     }
 }
